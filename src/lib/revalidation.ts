@@ -162,7 +162,7 @@ export const revalidateCollectionItem = async (
 
         addRelatedDocTags(configCollection.slug, relatedDocuments.docs)
       } catch (e) {
-        console.error('Error during deep revalidation', {
+        payload.logger.error('Error during deep revalidation', {
           configCollectionSlug: configCollection.slug,
           docCollectionSlug: collectionSlug,
           error: e,
@@ -176,7 +176,7 @@ export const revalidateCollectionItem = async (
     revalidateTag(tag)
   }
 
-  console.info(`Revalidated tags ${Array.from(tagsToRevalidate).join(', ')}`)
+  payload.logger.info(`Revalidated tags ${Array.from(tagsToRevalidate).join(', ')}`)
 }
 
 export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
@@ -188,11 +188,12 @@ export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
 
 export const revalidateGlobalItem = (params: RevalidateGlobalParams): void => {
   // TODO : handle relations revalidation, like it's done in revalidateCollectionItem
+  const payload = params.req.payload
 
   const { global } = params
   const globalSlug = global?.slug
 
   revalidateTag(globalSlug)
 
-  console.info(`Revalidated tag `, globalSlug)
+  payload.logger.info(`Revalidated tag `, globalSlug)
 }

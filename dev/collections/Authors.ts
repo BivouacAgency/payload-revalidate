@@ -12,8 +12,8 @@ export const Authors: CollectionConfig = {
     // TODO check priority between this hook and the revalidation hook
     // Be sure it doesn't make any issues
     afterChange: [
-      (args) => {
-        console.log('Authors hook afterChange')
+      ({ req }) => {
+        req.payload.logger.debug('Authors hook afterChange')
       },
     ],
   },
