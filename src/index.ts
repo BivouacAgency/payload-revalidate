@@ -1,111 +1,51 @@
-import type { CollectionSlug, Config } from 'payload'
+import type { Config } from 'payload'
 
-import { customEndpointHandler } from './endpoints/customEndpointHandler.js'
+import {
+  revalidateCollectionChange,
+  revalidateCollectionDelete,
+  revalidateGlobal,
+} from './hooks/revalidate.js'
 
 export type PayloadRevalidateConfig = {
-  /**
-   * List of collections to add a custom field
-   */
-  collections?: Partial<Record<CollectionSlug, true>>
-  disabled?: boolean
+  enable?: boolean
 }
 
 export const payloadRevalidate =
   (pluginOptions: PayloadRevalidateConfig) =>
   (config: Config): Config => {
-    if (!config.collections) {
-      config.collections = []
-    }
+    const { enable = true } = pluginOptions
 
-    config.collections.push({
-      slug: 'plugin-collection',
-      fields: [
-        {
-          name: 'id',
-          type: 'text',
-        },
-      ],
-    })
-
-    if (pluginOptions.collections) {
-      for (const collectionSlug in pluginOptions.collections) {
-        const collection = config.collections.find(
-          (collection) => collection.slug === collectionSlug,
-        )
-
-        if (collection) {
-          collection.fields.push({
-            name: 'addedByPlugin',
-            type: 'text',
-            admin: {
-              position: 'sidebar',
-            },
-          })
-        }
-      }
-    }
-
-    /**
-     * If the plugin is disabled, we still want to keep added collections/fields so the database schema is consistent which is important for migrations.
-     * If your plugin heavily modifies the database schema, you may want to remove this property.
-     */
-    if (pluginOptions.disabled) {
+    if (!enable) {
       return config
     }
 
-    if (!config.endpoints) {
-      config.endpoints = []
-    }
-
-    if (!config.admin) {
-      config.admin = {}
-    }
-
-    if (!config.admin.components) {
-      config.admin.components = {}
-    }
-
-    if (!config.admin.components.beforeDashboard) {
-      config.admin.components.beforeDashboard = []
-    }
-
-    config.admin.components.beforeDashboard.push(
-      `payload-revalidate/client#BeforeDashboardClient`,
-    )
-    config.admin.components.beforeDashboard.push(
-      `payload-revalidate/rsc#BeforeDashboardServer`,
-    )
-
-    config.endpoints.push({
-      handler: customEndpointHandler,
-      method: 'get',
-      path: '/my-plugin-endpoint',
-    })
-
-    const incomingOnInit = config.onInit
-
-    config.onInit = async (payload) => {
-      // Ensure we are executing any existing onInit functions before running our own.
-      if (incomingOnInit) {
-        await incomingOnInit(payload)
+    if (config.collections) {
+      for (const collection of config.collections) {
+        if (!collection.hooks) {
+          collection.hooks = {}
+        }
+        if (!collection.hooks?.afterChange) {
+          collection.hooks.afterChange = []
+        }
+        if (!collection.hooks?.afterDelete) {
+          collection.hooks.afterDelete = []
+        }
+        // Revalidation hooks should be trigger at the end of the hooks chain
+        collection.hooks.afterChange.push(revalidateCollectionChange)
+        collection.hooks.afterDelete.push(revalidateCollectionDelete)
       }
+    }
 
-      const { totalDocs } = await payload.count({
-        collection: 'plugin-collection',
-        where: {
-          id: {
-            equals: 'seeded-by-plugin',
-          },
-        },
-      })
+    if (config.globals) {
+      for (const global of config.globals) {
+        if (!global.hooks) {
+          global.hooks = {}
+        }
+        if (!global.hooks?.afterChange) {
+          global.hooks.afterChange = []
+        }
 
-      if (totalDocs === 0) {
-        await payload.create({
-          collection: 'plugin-collection',
-          data: {
-            id: 'seeded-by-plugin',
-          },
-        })
+        global.hooks.afterChange.push(revalidateGlobal)
       }
     }
 

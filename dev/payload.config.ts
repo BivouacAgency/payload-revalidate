@@ -1,4 +1,4 @@
-import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { MongoMemoryReplSet } from 'mongodb-memory-server'
 import path from 'path'
@@ -7,6 +7,11 @@ import { payloadRevalidate } from 'payload-revalidate'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import Authors from './collections/Authors.js'
+import Media from './collections/Media.js'
+import Posts from './collections/Posts.js'
+import Users from './collections/Users.js'
+import { env } from './env.js'
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { seed } from './seed.js'
 
@@ -35,22 +40,13 @@ const buildConfigWithMemoryDB = async () => {
         baseDir: path.resolve(dirname),
       },
     },
-    collections: [
-      {
-        slug: 'posts',
-        fields: [],
+    collections: [Authors, Media, Posts, Users],
+    db: postgresAdapter({
+      pool: {
+        connectionString: env.DATABASE_URI,
       },
-      {
-        slug: 'media',
-        fields: [],
-        upload: {
-          staticDir: path.resolve(dirname, 'media'),
-        },
-      },
-    ],
-    db: mongooseAdapter({
-      ensureIndexes: true,
-      url: process.env.DATABASE_URI || '',
+      // Only push if database is localhost
+      push: env.DATABASE_URI.includes('localhost') || env.DATABASE_URI.includes('127.0.0.1'),
     }),
     editor: lexicalEditor(),
     email: testEmailAdapter,
