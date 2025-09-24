@@ -56,7 +56,7 @@
     "@payloadcms/eslint-config": "3.9.0",
     "@payloadcms/next": "3.37.0",
     "@payloadcms/richtext-lexical": "3.37.0",
-    "@payloadcms/storage-s3": "^3.55.1",
+    "@payloadcms/storage-s3": "3.37.0",
     "@payloadcms/ui": "3.37.0",
     "@playwright/test": "^1.52.0",
     "@swc-node/register": "1.10.9",

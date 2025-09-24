@@ -7,7 +7,7 @@ import { defineConfig } from 'vitest/config'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
   loadEnv(path.resolve(dirname, './dev'))
 
   return {
@@ -20,6 +20,7 @@ export default defineConfig(() => {
       environment: 'node',
       hookTimeout: 30_000,
       testTimeout: 30_000,
+      env: loadEnv(mode, process.cwd(), ''),
     },
   }
 })

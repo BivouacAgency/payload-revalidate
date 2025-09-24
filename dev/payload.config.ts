@@ -1,6 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { MongoMemoryReplSet } from 'mongodb-memory-server'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { payloadRevalidate } from 'payload-revalidate'
@@ -23,16 +22,16 @@ if (!process.env.ROOT_DIR) {
 }
 
 const buildConfigWithMemoryDB = async () => {
-  if (process.env.NODE_ENV === 'test') {
-    const memoryDB = await MongoMemoryReplSet.create({
-      replSet: {
-        count: 3,
-        dbName: 'payloadmemory',
-      },
-    })
+  // if (process.env.NODE_ENV === 'test') {
+  //   const memoryDB = await MongoMemoryReplSet.create({
+  //     replSet: {
+  //       count: 3,
+  //       dbName: 'payloadmemory',
+  //     },
+  //   })
 
-    process.env.DATABASE_URI = `${memoryDB.getUri()}&retryWrites=true`
-  }
+  //   process.env.DATABASE_URI = `${memoryDB.getUri()}&retryWrites=true`
+  // }
 
   return buildConfig({
     admin: {
@@ -53,13 +52,7 @@ const buildConfigWithMemoryDB = async () => {
     onInit: async (payload) => {
       await seed(payload)
     },
-    plugins: [
-      payloadRevalidate({
-        collections: {
-          posts: true,
-        },
-      }),
-    ],
+    plugins: [payloadRevalidate({})],
     secret: process.env.PAYLOAD_SECRET || 'test-secret_key',
     sharp,
     typescript: {
