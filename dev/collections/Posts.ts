@@ -22,7 +22,7 @@ const Posts: CollectionConfig = {
       type: 'upload',
       label: 'Image',
       relationTo: 'media',
-      required: true,
+      required: false,
     },
   ],
 }

@@ -7,10 +7,12 @@ import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import Authors from './collections/Authors.js'
+import Categories from './collections/Categories.js'
 import Media from './collections/Media.js'
 import Posts from './collections/Posts.js'
 import Users from './collections/Users.js'
 import { env } from './env.js'
+import MainMenu from './globals/MainMenu.js'
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { seed } from './seed.js'
 
@@ -39,7 +41,7 @@ const buildConfigWithMemoryDB = async () => {
         baseDir: path.resolve(dirname),
       },
     },
-    collections: [Authors, Media, Posts, Users],
+    collections: [Authors, Categories, Media, Posts, Users],
     db: postgresAdapter({
       pool: {
         connectionString: env.DATABASE_URI,
@@ -49,6 +51,7 @@ const buildConfigWithMemoryDB = async () => {
     }),
     editor: lexicalEditor(),
     email: testEmailAdapter,
+    globals: [MainMenu],
     onInit: async (payload) => {
       await seed(payload)
     },
