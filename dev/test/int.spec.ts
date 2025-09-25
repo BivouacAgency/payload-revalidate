@@ -89,22 +89,23 @@ describe('Plugin integration tests', () => {
 
     mockRevalidateTag.mockClear()
 
-    await payload.delete({ collection: 'authors', where: { name: { equals: 'added by plugin' } } })
+    await payload.delete({
+      collection: 'authors',
+      where: { name: { equals: 'updated by plugin' } },
+    })
 
-    // TODO revalidation on DELETE is not implemented yet
-
-    // expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
-    // expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-    // expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-    // expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-    // expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
+    expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
+    expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
+    expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
+    expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
+    expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
 
     mockRevalidateTag.mockClear()
 
     await payload.delete({ collection: 'posts', where: { title: { equals: 'added by plugin' } } })
 
-    // expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
-    // expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-    // expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
+    expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
+    expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
+    expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
   })
 })
