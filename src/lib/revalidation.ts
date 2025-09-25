@@ -9,7 +9,7 @@ import {
 } from 'payload'
 import { z } from 'zod'
 
-import { collectRelationFieldPaths } from './config-parser.js'
+import { buildRelationTree } from './config-parser.js'
 
 const INTERNAL_COLLECTIONS: CollectionSlug[] = [
   'payload-locked-documents',
@@ -63,7 +63,7 @@ export const revalidateCollectionItem = async (
       continue
     }
 
-    const relationFields = collectRelationFieldPaths(configCollection.fields)
+    const relationFields = buildRelationTree(configCollection.slug, config)
 
     for (const relationField of relationFields) {
       const isRelationToModifiedCollection = relationField.relationTo.includes(collectionSlug)
