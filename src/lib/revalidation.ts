@@ -9,6 +9,8 @@ import {
 } from 'payload'
 import { z } from 'zod'
 
+import { collectRelationFieldPaths } from './config-parser.js'
+
 const INTERNAL_COLLECTIONS: CollectionSlug[] = [
   'payload-locked-documents',
   'payload-migrations',
@@ -56,92 +58,6 @@ export const revalidateCollectionItem = async (
   // Recursively handle relations nested inside containers like "blocks", "array", and "group".
   const config = payload.config
 
-  type RelationPath = { path: string; relationTo: string[] }
-
-  const isStringArray = (input: unknown): input is string[] =>
-    Array.isArray(input) && input.every((v) => typeof v === 'string')
-
-  const isUnknownArray = (input: unknown): input is unknown[] => Array.isArray(input)
-
-  const normalizeRelationTo = (input: unknown): string[] => {
-    if (isStringArray(input)) {
-      return input
-    }
-    if (typeof input === 'string') {
-      return [input]
-    }
-    return []
-  }
-
-  const collectRelationFieldPaths = (fields: unknown[], prefix = ''): RelationPath[] => {
-    const paths: RelationPath[] = []
-    for (const rawField of fields ?? []) {
-      if (typeof rawField !== 'object' || rawField === null) {
-        continue
-      }
-      const f: Record<string, unknown> = Object.fromEntries(Object.entries(rawField))
-
-      const nameVal = f['name']
-      const typeVal = f['type']
-      const fieldName = typeof nameVal === 'string' ? nameVal : undefined
-      const fieldType = typeof typeVal === 'string' ? typeVal : undefined
-      if (!fieldName || !fieldType) {
-        continue
-      }
-
-      const fieldPath = prefix ? `${prefix}${fieldName}` : fieldName
-
-      if (fieldType === 'relationship' || fieldType === 'upload') {
-        paths.push({
-          path: fieldPath,
-          relationTo: normalizeRelationTo(f['relationTo']),
-        })
-        continue
-      }
-
-      if (fieldType === 'blocks') {
-        const blocksVal = f['blocks']
-        if (isUnknownArray(blocksVal)) {
-          for (const rawBlock of blocksVal) {
-            if (typeof rawBlock !== 'object' || rawBlock === null) {
-              continue
-            }
-            const b: Record<string, unknown> = Object.fromEntries(Object.entries(rawBlock))
-            const fieldsVal = b['fields']
-            const nestedFields = isUnknownArray(fieldsVal) ? fieldsVal : []
-            const nested = collectRelationFieldPaths(nestedFields, `${fieldPath}.`)
-            paths.push(...nested)
-          }
-        }
-        continue
-      }
-
-      if (fieldType === 'array' || fieldType === 'group') {
-        const fieldsVal = f['fields']
-        const subFields = isUnknownArray(fieldsVal) ? fieldsVal : []
-        const nested = collectRelationFieldPaths(subFields, `${fieldPath}.`)
-        paths.push(...nested)
-        continue
-      }
-    }
-    return paths
-  }
-
-  const addRelatedDocTags = (
-    collectionSlugToRevalidate: string,
-    relatedDocs: Array<{ id: unknown }>,
-  ) => {
-    if (relatedDocs.length > 0) {
-      tagsToRevalidate.add(collectionSlugToRevalidate)
-    }
-    for (const relatedDocument of relatedDocs) {
-      const id = relatedDocument?.id
-      if (typeof id === 'string' || typeof id === 'number') {
-        tagsToRevalidate.add(`${collectionSlugToRevalidate}.${id}`)
-      }
-    }
-  }
-
   for (const configCollection of config.collections) {
     if (INTERNAL_COLLECTIONS.includes(configCollection.slug)) {
       continue
@@ -150,7 +66,8 @@ export const revalidateCollectionItem = async (
     const relationFields = collectRelationFieldPaths(configCollection.fields)
 
     for (const relationField of relationFields) {
-      if (!relationField.relationTo.includes(collectionSlug)) {
+      const isRelationToModifiedCollection = relationField.relationTo.includes(collectionSlug)
+      if (!isRelationToModifiedCollection) {
         continue
       }
       try {
@@ -160,7 +77,16 @@ export const revalidateCollectionItem = async (
           where: { [relationField.path]: { equals: doc.id } },
         })
 
-        addRelatedDocTags(configCollection.slug, relatedDocuments.docs)
+        // Add tags for related documents that reference the modified item
+        if (relatedDocuments.docs.length > 0) {
+          tagsToRevalidate.add(configCollection.slug)
+        }
+        for (const relatedDocument of relatedDocuments.docs) {
+          const id = relatedDocument?.id
+          if (typeof id === 'string' || typeof id === 'number') {
+            tagsToRevalidate.add(`${configCollection.slug}.${id}`)
+          }
+        }
       } catch (e) {
         payload.logger.error('Error during deep revalidation', {
           configCollectionSlug: configCollection.slug,
