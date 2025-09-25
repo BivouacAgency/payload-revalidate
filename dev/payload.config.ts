@@ -10,6 +10,7 @@ import Authors from './collections/Authors.js'
 import Categories from './collections/Categories.js'
 import Media from './collections/Media.js'
 import Posts from './collections/Posts.js'
+import Series from './collections/Series.js'
 import Users from './collections/Users.js'
 import { env } from './env.js'
 import MainMenu from './globals/MainMenu.js'
@@ -41,7 +42,7 @@ const buildConfigWithMemoryDB = async () => {
         baseDir: path.resolve(dirname),
       },
     },
-    collections: [Authors, Categories, Media, Posts, Users],
+    collections: [Authors, Categories, Media, Posts, Series, Users],
     db: postgresAdapter({
       pool: {
         connectionString: env.DATABASE_URI,
