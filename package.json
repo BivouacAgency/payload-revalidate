@@ -51,7 +51,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@payloadcms/db-postgres": "^3.57.0",
-    "@payloadcms/eslint-config": "^3.9.0",
+    "@payloadcms/eslint-config": "^3.28.0",
     "@payloadcms/next": "^3.57.0",
     "@payloadcms/richtext-lexical": "^3.57.0",
     "@payloadcms/ui": "^3.57.0",
@@ -68,7 +68,7 @@
     "eslint-config-next": "15.4.4",
     "graphql": "^16.8.1",
     "open": "^10.1.0",
-    "payload": "3.57.0",
+    "payload": "^3.57.0",
     "prettier": "^3.4.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
