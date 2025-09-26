@@ -12,18 +12,5 @@ services:
       POSTGRES_PASSWORD: local
       POSTGRES_USER: payload
       POSTGRES_DB: payload
-  minio:
-    image: minio/minio:latest
-    entrypoint: sh
-    command: -c 'mkdir -p /data/payload && /usr/bin/minio server /data --console-address ":9001"'
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    environment:
-      - MINIO_ACCESS_KEY=miniolocal
-      - MINIO_SECRET_KEY=miniolocalpassword
-    restart: unless-stopped
-    volumes:
-      - '.data/minio:/data'
 volumes:
   node_modules:
