@@ -1,32 +1,16 @@
-import type { Payload } from 'payload'
+import { beforeAll, expect, test } from 'vitest'
 
-import config from '@payload-config'
-import { getPayload } from 'payload'
-import { beforeAll, beforeEach, expect, test, vi } from 'vitest'
+// Import global payload and mock utilities
+import { mockRevalidateTag, payload } from '../setup.js'
 
-// Mock Next.js revalidateTag function
-vi.mock('next/cache.js', () => ({
-  revalidateTag: vi.fn(),
-}))
-
-// Import the mocked function for assertions
-import { revalidateTag } from 'next/cache.js'
-const mockRevalidateTag = vi.mocked(revalidateTag)
-
-let payload: Payload
-
+// Initialize global data
 beforeAll(async () => {
-  payload = await getPayload({ config })
   await payload.updateGlobal({
     slug: 'mainMenu',
     data: {
       menu: [{ label: 'mainMenuName1' }],
     },
   })
-})
-
-beforeEach(() => {
-  mockRevalidateTag.mockClear()
 })
 
 test('revalidates correctly globals on update', async () => {

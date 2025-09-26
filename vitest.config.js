@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => {
       hookTimeout: 30_000,
       testTimeout: 30_000,
       env: loadEnv(mode, process.cwd(), ''),
+      setupFiles: ['./dev/test/setup.ts'],
     },
   }
 })
