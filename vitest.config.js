@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
       testTimeout: 30_000,
       env: loadEnv(mode, process.cwd(), ''),
       setupFiles: ['./dev/test/setup.ts'],
+      // On CI, run tests in serial to avoid payload to fail
+      // trying to initialize the database in parallel
+      maxWorkers: process.env.CI ? 1 : undefined,
     },
   }
 })
