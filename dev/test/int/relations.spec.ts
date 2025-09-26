@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import config from '@payload-config'
+import { getAssetsPath } from 'helpers/file.js'
 import { getPayload } from 'payload'
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 
@@ -14,17 +15,21 @@ import { revalidateTag } from 'next/cache.js'
 const mockRevalidateTag = vi.mocked(revalidateTag)
 
 let payload: Payload
-
-const image = {
-  id: 1,
-  alt: 'image',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  url: 'https://example.com/image.jpg',
-}
+let mediaId: number
 
 beforeAll(async () => {
   payload = await getPayload({ config })
+
+  const media = await payload.create({
+    collection: 'media',
+    data: {
+      id: 1,
+      alt: 'image',
+    },
+    filePath: getAssetsPath() + '/placeholder.png',
+  })
+
+  mediaId = media.id
 })
 
 afterAll(() => {
@@ -58,7 +63,7 @@ test('revalidates correctly relations for depth 1', async () => {
     collection: 'posts',
     data: {
       author: author.id,
-      image,
+      image: mediaId,
       title: 'added by plugin',
     },
     depth: 2,
@@ -128,7 +133,7 @@ test('revalidates correctly relations for depth 2 ', async () => {
     collection: 'posts',
     data: {
       author: author.id,
-      image,
+      image: mediaId,
       title: 'postTitle',
     },
   })
@@ -212,7 +217,7 @@ test('revalidates correctly relations for depth 3', async () => {
     collection: 'posts',
     data: {
       author: author.id,
-      image,
+      image: mediaId,
       title: 'postTitleDepth3',
     },
   })
