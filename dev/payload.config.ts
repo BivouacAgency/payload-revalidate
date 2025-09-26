@@ -24,45 +24,37 @@ if (!process.env.ROOT_DIR) {
   process.env.ROOT_DIR = dirname
 }
 
-const buildConfigWithMemoryDB = async () => {
-  // if (process.env.NODE_ENV === 'test') {
-  //   const memoryDB = await MongoMemoryReplSet.create({
-  //     replSet: {
-  //       count: 3,
-  //       dbName: 'payloadmemory',
-  //     },
-  //   })
-
-  //   process.env.DATABASE_URI = `${memoryDB.getUri()}&retryWrites=true`
-  // }
-
-  return buildConfig({
-    admin: {
-      importMap: {
-        baseDir: path.resolve(dirname),
-      },
+const config = buildConfig({
+  admin: {
+    importMap: {
+      baseDir: path.resolve(dirname),
     },
-    collections: [Authors, Categories, Media, Posts, Series, Users],
-    db: postgresAdapter({
-      pool: {
-        connectionString: env.DATABASE_URI,
-      },
-      // Only push if database is localhost
-      push: env.DATABASE_URI.includes('localhost') || env.DATABASE_URI.includes('127.0.0.1'),
+  },
+  collections: [Authors, Categories, Media, Posts, Series, Users],
+  db: postgresAdapter({
+    pool: {
+      connectionString: env.DATABASE_URI,
+    },
+    // Only push if database is localhost
+    push: env.DATABASE_URI.includes('localhost') || env.DATABASE_URI.includes('127.0.0.1'),
+  }),
+  editor: lexicalEditor(),
+  email: testEmailAdapter,
+  globals: [MainMenu],
+  onInit: async (payload) => {
+    await seed(payload)
+  },
+  plugins: [
+    payloadRevalidate({
+      enable: true,
+      maxDepth: undefined,
     }),
-    editor: lexicalEditor(),
-    email: testEmailAdapter,
-    globals: [MainMenu],
-    onInit: async (payload) => {
-      await seed(payload)
-    },
-    plugins: [payloadRevalidate({})],
-    secret: process.env.PAYLOAD_SECRET || 'test-secret_key',
-    sharp,
-    typescript: {
-      outputFile: path.resolve(dirname, 'payload-types.ts'),
-    },
-  })
-}
+  ],
+  secret: env.PAYLOAD_SECRET,
+  sharp,
+  typescript: {
+    outputFile: path.resolve(dirname, 'payload-types.ts'),
+  },
+})
 
-export default buildConfigWithMemoryDB()
+export default config

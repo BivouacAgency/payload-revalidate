@@ -8,6 +8,11 @@ import {
 
 export type PayloadRevalidateConfig = {
   enable?: boolean
+  /**
+   * Maximum depth of relations to follow
+   * If undefined, will follow all relations
+   */
+  maxDepth?: number
 }
 
 export const payloadRevalidate =
