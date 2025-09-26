@@ -54,6 +54,7 @@ export const config = buildConfig({
 - 📦 Available on npm: `npm install payload-revalidate`
 - 🔗 GitHub: [BivouacAgency/payload-revalidate](https://github.com/BivouacAgency/payload-revalidate)
 - ⚠️ Some warnings may be present
+- 💿 Only tested with PostgreSQL. The behaviour seem to differ with other databases.
 
 ## Compatibility
 
