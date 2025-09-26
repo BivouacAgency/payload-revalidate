@@ -1,25 +1,12 @@
-import type { Payload } from 'payload'
-
-import config from '@payload-config'
 import { getAssetsPath } from 'helpers/file.js'
-import { getPayload } from 'payload'
-import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest'
+import { beforeAll, expect, test } from 'vitest'
 
-// Mock Next.js revalidateTag function
-vi.mock('next/cache.js', () => ({
-  revalidateTag: vi.fn(),
-}))
+// Import global payload and mock utilities
+import { mockRevalidateTag, payload } from '../setup.js'
 
-// Import the mocked function for assertions
-import { revalidateTag } from 'next/cache.js'
-const mockRevalidateTag = vi.mocked(revalidateTag)
-
-let payload: Payload
 let mediaId: number
 
 beforeAll(async () => {
-  payload = await getPayload({ config })
-
   const media = await payload.create({
     collection: 'media',
     data: {
@@ -32,19 +19,7 @@ beforeAll(async () => {
   mediaId = media.id
 })
 
-afterAll(() => {
-  // Clear all mocks after tests
-  vi.clearAllMocks()
-})
-
-beforeEach(() => {
-  mockRevalidateTag.mockClear()
-})
-
 test('revalidates correctly relations for depth 1', async () => {
-  // Clear any previous calls to the mock
-  mockRevalidateTag.mockClear()
-
   let author = await payload.create({
     collection: 'authors',
     data: {
