@@ -283,3 +283,88 @@ test('revalidates correctly relations for depth 3', async () => {
     collection: 'series',
   })
 })
+
+test('revalidates correctly relations of a global -> collection -> collection', async () => {
+  // Create an author first (depth 2)
+  const author = await payload.create({
+    collection: 'authors',
+    data: {
+      name: 'authorForGlobalTest',
+    },
+  })
+
+  // Create a post with the author (depth 1)
+  const post = await payload.create({
+    collection: 'posts',
+    data: {
+      author: author.id,
+      image: mediaId,
+      title: 'postForGlobalTest',
+    },
+  })
+
+  // Update the global to reference the post and category
+  await payload.updateGlobal({
+    slug: 'siteSettings',
+    data: {
+      featuredPost: post.id,
+      siteName: 'Test Site',
+    },
+  })
+
+  mockRevalidateTag.mockClear()
+
+  // Update the author (depth 2) - this should trigger revalidation for:
+  // - authors collection and specific author (depth 2)
+  // - posts collection and specific post (depth 1)
+  // - categories collection and specific category (depth 0)
+  // - siteSettings global (depth 0, but references the post)
+  await payload.update({
+    id: author.id,
+    collection: 'authors',
+    data: {
+      name: 'authorForGlobalTestUpdated',
+    },
+  })
+
+  // Verify revalidateTag was called for all related collections and the global
+  expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+
+  mockRevalidateTag.mockClear()
+
+  // Delete the author (depth 2) - this should trigger revalidation for:
+  // - authors collection and specific author (depth 2)
+  // - posts collection and specific post (depth 1)
+  // - categories collection and specific category (depth 0)
+  // - siteSettings global (depth 0, but references the post)
+  await payload.delete({
+    id: author.id,
+    collection: 'authors',
+  })
+
+  expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+
+  mockRevalidateTag.mockClear()
+
+  // Clean up remaining entities
+  await payload.delete({
+    id: post.id,
+    collection: 'posts',
+  })
+  await payload.delete({
+    id: author.id,
+    collection: 'authors',
+  })
+})
