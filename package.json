@@ -46,15 +46,15 @@
     "test:int": "vitest"
   },
   "dependencies": {
-    "next": "15.4.4"
+    "next": "^15.5.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
-    "@payloadcms/db-postgres": "3.37.0",
-    "@payloadcms/eslint-config": "3.9.0",
-    "@payloadcms/next": "3.37.0",
-    "@payloadcms/richtext-lexical": "3.37.0",
-    "@payloadcms/ui": "3.37.0",
+    "@payloadcms/db-postgres": "^3.57.0",
+    "@payloadcms/eslint-config": "^3.9.0",
+    "@payloadcms/next": "^3.57.0",
+    "@payloadcms/richtext-lexical": "^3.57.0",
+    "@payloadcms/ui": "^3.57.0",
     "@playwright/test": "^1.52.0",
     "@swc-node/register": "1.10.9",
     "@swc/cli": "0.6.0",
@@ -68,7 +68,7 @@
     "eslint-config-next": "15.4.4",
     "graphql": "^16.8.1",
     "open": "^10.1.0",
-    "payload": "3.37.0",
+    "payload": "3.57.0",
     "prettier": "^3.4.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -80,8 +80,8 @@
     "zod": "^4.1.7"
   },
   "peerDependencies": {
-    "next": "15.4.4",
-    "payload": "^3.37.0"
+    "next": "^15.5.4",
+    "payload": "^3.57.0"
   },
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
