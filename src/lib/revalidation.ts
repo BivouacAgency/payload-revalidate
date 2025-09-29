@@ -1,6 +1,5 @@
 import { revalidateTag } from 'next/cache.js'
 import {
-  type CollectionSlug,
   type PayloadRequest,
   type RequestContext,
   type SanitizedCollectionConfig,
@@ -10,12 +9,7 @@ import {
 import { z } from 'zod'
 
 import { buildRelationTree } from './config-parser.js'
-
-const INTERNAL_COLLECTIONS: CollectionSlug[] = [
-  'payload-locked-documents',
-  'payload-migrations',
-  'payload-preferences',
-]
+import { get } from './object-utils.js'
 
 export interface RevalidateCollectionParams<T extends TypeWithID = TypeWithID> {
   /** The collection which this hook is being run on */
@@ -127,12 +121,12 @@ const getTagsFromRelations = async (params: {
   const config = payload.config
   const tagsToRevalidate = new Set<string>()
 
-  for (const configCollection of config.collections) {
-    if (INTERNAL_COLLECTIONS.includes(configCollection.slug)) {
-      continue
-    }
+  // Get relation trees for all collections and globals at once
+  const allRelationTrees = buildRelationTree(config)
 
-    const relationFields = buildRelationTree(configCollection.slug, config)
+  // Handle collections
+  for (const configCollection of config.collections) {
+    const relationFields = allRelationTrees.collections[configCollection.slug] || []
 
     for (const relationField of relationFields) {
       const isRelationToModifiedItem = relationField.relationTo.includes(modifiedSlug)
@@ -142,6 +136,7 @@ const getTagsFromRelations = async (params: {
       try {
         const relatedDocuments = await payload.find({
           collection: configCollection.slug,
+          // TODO solve this "limit" issue
           limit: 10000,
           where: { [relationField.path]: { equals: docId } },
         })
@@ -155,13 +150,51 @@ const getTagsFromRelations = async (params: {
           tagsToRevalidate.add(`${configCollection.slug}.${id}`)
         }
       } catch (e) {
-        payload.logger.error('Error during deep revalidation', {
-          configCollectionSlug: configCollection.slug,
-          context,
-          error: e,
-          modifiedSlug,
-          relationFieldPath: relationField.path,
+        payload.logger.error(
+          {
+            configCollectionSlug: configCollection.slug,
+            context,
+            error: e,
+            modifiedSlug,
+            relationFieldPath: relationField.path,
+          },
+          'Error during deep revalidation',
+        )
+      }
+    }
+  }
+
+  // Handle globals
+  for (const configGlobal of config.globals || []) {
+    const relationFields = allRelationTrees.globals[configGlobal.slug] || []
+
+    for (const relationField of relationFields) {
+      const isRelationToModifiedItem = relationField.relationTo.includes(modifiedSlug)
+      if (!isRelationToModifiedItem) {
+        continue
+      }
+      try {
+        // For globals, we need to check if the global value has the relation
+        const globalValue = await payload.findGlobal({
+          slug: configGlobal.slug,
         })
+
+        // Check if the global has the relation field pointing to the modified item
+        // Use get() to handle nested paths like "featuredPost.author"
+        if (globalValue && get(globalValue, relationField.path + '.id') === docId) {
+          tagsToRevalidate.add(configGlobal.slug)
+        }
+      } catch (e) {
+        payload.logger.error(
+          {
+            configGlobalSlug: configGlobal.slug,
+            context,
+            error: e,
+            modifiedSlug,
+            relationFieldPath: relationField.path,
+          },
+          'Error during deep revalidation for global',
+        )
       }
     }
   }
