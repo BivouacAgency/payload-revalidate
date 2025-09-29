@@ -19,6 +19,9 @@ beforeAll(async () => {
   mediaId = media.id
 })
 
+// Tests here are using the default config, where defaultDepth = undefined
+// Check depth.spec.ts for tests using a custom defaultDepth
+
 test('revalidates correctly relations for depth 1', async () => {
   let author = await payload.create({
     collection: 'authors',
