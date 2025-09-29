@@ -140,12 +140,12 @@ export const extractRelationFieldPaths = (
  * traverses into related collections to build a comprehensive tree of relationships.
  *
  * @param config - The full Payload configuration
- * @param maxDepth - Maximum depth to traverse (default: 3, set to 0 for unlimited)
+ * @param maxDepth - Maximum depth to traverse (set to 0 for unlimited)
  * @returns Object with collections and globals relation paths
  */
 export const buildRelationTree = (
   config: SanitizedConfig,
-  maxDepth: number = 3,
+  maxDepth: number = 0,
 ): RelationTreeResult => {
   const result: RelationTreeResult = {
     collections: {},

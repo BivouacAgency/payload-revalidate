@@ -1,24 +1,20 @@
 import type { Config } from 'payload'
 
 import {
-  revalidateCollectionChange,
-  revalidateCollectionDelete,
-  revalidateGlobal,
+  getRevalidateCollectionChangeHook,
+  getRevalidateCollectionDeleteHook,
+  getRevalidateGlobalHook,
 } from './hooks/revalidate.js'
 
 export type PayloadRevalidateConfig = {
+  defaultDepth?: number
   enable?: boolean
-  /**
-   * Maximum depth of relations to follow
-   * If undefined, will follow all relations
-   */
-  maxDepth?: number
 }
 
 export const payloadRevalidate =
   (pluginOptions: PayloadRevalidateConfig) =>
   (config: Config): Config => {
-    const { enable = true } = pluginOptions
+    const { defaultDepth, enable = true } = pluginOptions
 
     if (!enable) {
       return config
@@ -36,8 +32,8 @@ export const payloadRevalidate =
           collection.hooks.afterDelete = []
         }
         // Revalidation hooks should be trigger at the end of the hooks chain
-        collection.hooks.afterChange.push(revalidateCollectionChange)
-        collection.hooks.afterDelete.push(revalidateCollectionDelete)
+        collection.hooks.afterChange.push(getRevalidateCollectionChangeHook(defaultDepth))
+        collection.hooks.afterDelete.push(getRevalidateCollectionDeleteHook(defaultDepth))
       }
     }
 
@@ -50,7 +46,7 @@ export const payloadRevalidate =
           global.hooks.afterChange = []
         }
 
-        global.hooks.afterChange.push(revalidateGlobal)
+        global.hooks.afterChange.push(getRevalidateGlobalHook(defaultDepth))
       }
     }
 

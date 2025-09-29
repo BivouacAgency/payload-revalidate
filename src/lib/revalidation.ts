@@ -15,6 +15,7 @@ export interface RevalidateCollectionParams<T extends TypeWithID = TypeWithID> {
   /** The collection which this hook is being run on */
   collection: SanitizedCollectionConfig
   context: RequestContext
+  depth?: number
   doc: T
   req: PayloadRequest
 }
@@ -30,7 +31,7 @@ export const revalidateCollectionItem = async (
   // Use a set to avoid duplicate tags and improve readability
   const tagsToRevalidate = new Set<string>()
 
-  const { collection, doc } = params
+  const { collection, depth, doc } = params
   const collectionSlug = collection?.slug
 
   tagsToRevalidate.add(collectionSlug)
@@ -52,6 +53,7 @@ export const revalidateCollectionItem = async (
   // Recursively handle relations nested inside containers like "blocks", "array", and "group".
   const relationTags = await getTagsFromRelations({
     context: 'collection',
+    depth,
     docId: doc.id,
     modifiedSlug: collectionSlug,
     payload,
@@ -71,6 +73,7 @@ export const revalidateCollectionItem = async (
 
 export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
   context: RequestContext
+  depth?: number
   doc: T
   global: SanitizedGlobalConfig
   req: PayloadRequest
@@ -82,7 +85,7 @@ export const revalidateGlobalItem = async (params: RevalidateGlobalParams): Prom
   // Use a set to avoid duplicate tags and improve readability
   const tagsToRevalidate = new Set<string>()
 
-  const { doc, global } = params
+  const { depth: defaultDepth, doc, global } = params
   const globalSlug = global?.slug
 
   tagsToRevalidate.add(globalSlug)
@@ -91,6 +94,7 @@ export const revalidateGlobalItem = async (params: RevalidateGlobalParams): Prom
   // Recursively handle relations nested inside containers like "blocks", "array", and "group".
   const relationTags = await getTagsFromRelations({
     context: 'global',
+    depth: defaultDepth,
     docId: doc.id,
     modifiedSlug: globalSlug,
     payload,
@@ -113,16 +117,17 @@ export const revalidateGlobalItem = async (params: RevalidateGlobalParams): Prom
  */
 const getTagsFromRelations = async (params: {
   context: 'collection' | 'global'
+  depth?: number
   docId: number | string
   modifiedSlug: string
   payload: PayloadRequest['payload']
 }): Promise<Set<string>> => {
-  const { context, docId, modifiedSlug, payload } = params
+  const { context, depth, docId, modifiedSlug, payload } = params
   const config = payload.config
   const tagsToRevalidate = new Set<string>()
 
   // Get relation trees for all collections and globals at once
-  const allRelationTrees = buildRelationTree(config)
+  const allRelationTrees = buildRelationTree(config, depth)
 
   // Handle collections
   for (const configCollection of config.collections) {

@@ -1,3 +1,5 @@
+import type { Config } from 'payload'
+
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
@@ -25,7 +27,7 @@ if (!process.env.ROOT_DIR) {
   process.env.ROOT_DIR = dirname
 }
 
-const config = buildConfig({
+export const configOptions: Config = {
   admin: {
     importMap: {
       baseDir: path.resolve(dirname),
@@ -47,8 +49,8 @@ const config = buildConfig({
   },
   plugins: [
     payloadRevalidate({
+      defaultDepth: undefined,
       enable: true,
-      maxDepth: undefined,
     }),
   ],
   secret: env.PAYLOAD_SECRET,
@@ -56,6 +58,8 @@ const config = buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-})
+}
+
+const config = buildConfig(configOptions)
 
 export default config
