@@ -5,12 +5,7 @@ import { mockRevalidateTag, payload } from '../setup.js'
 
 // Initialize global data
 beforeAll(async () => {
-  await payload.updateGlobal({
-    slug: 'mainMenu',
-    data: {
-      menu: [{ label: 'mainMenuName1' }],
-    },
-  })
+  // Globals are already reset before each test in setup.ts
 })
 
 test('revalidates correctly globals on update', async () => {

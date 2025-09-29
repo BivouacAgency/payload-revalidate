@@ -14,6 +14,7 @@ import Series from './collections/Series.js'
 import Users from './collections/Users.js'
 import { env } from './env.js'
 import MainMenu from './globals/MainMenu.js'
+import SiteSettings from './globals/SiteSettings.js'
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { seed } from './seed.js'
 
@@ -40,7 +41,7 @@ const config = buildConfig({
   }),
   editor: lexicalEditor(),
   email: testEmailAdapter,
-  globals: [MainMenu],
+  globals: [MainMenu, SiteSettings],
   onInit: async (payload) => {
     await seed(payload)
   },

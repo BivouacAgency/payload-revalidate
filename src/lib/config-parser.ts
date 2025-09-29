@@ -1,10 +1,21 @@
-import type { Field, SanitizedConfig } from 'payload'
+import type { CollectionSlug, Field, GlobalSlug, SanitizedConfig } from 'payload'
+
+export const INTERNAL_COLLECTIONS: CollectionSlug[] = [
+  'payload-locked-documents',
+  'payload-migrations',
+  'payload-preferences',
+]
 
 export type RelationPath = {
   collectionSlug: string
   depth: number
   path: string
   relationTo: string[]
+}
+
+export type RelationTreeResult = {
+  collections: Record<CollectionSlug, RelationPath[]>
+  globals: Record<GlobalSlug, RelationPath[]>
 }
 
 export type CollectionFieldCache = Map<string, Field[]>
@@ -124,23 +135,147 @@ export const extractRelationFieldPaths = (
 }
 
 /**
- * Recursively builds a complete relation tree by traversing nested relationships.
- * This function extracts all relation field paths from a collection and recursively
+ * Recursively builds a complete relation tree by traversing nested relationships for ALL collections and globals.
+ * This function extracts all relation field paths from each collection and global and recursively
  * traverses into related collections to build a comprehensive tree of relationships.
+ *
+ * @param config - The full Payload configuration
+ * @param maxDepth - Maximum depth to traverse (default: 3, set to 0 for unlimited)
+ * @returns Object with collections and globals relation paths
+ */
+export const buildRelationTree = (
+  config: SanitizedConfig,
+  maxDepth: number = 3,
+): RelationTreeResult => {
+  const result: RelationTreeResult = {
+    collections: {},
+    globals: {},
+  }
+
+  // Get all collection slugs from the config
+  const collectionSlugs =
+    config.collections
+      .filter((col) => !INTERNAL_COLLECTIONS.includes(col.slug)) // Remove internal collections
+      .map((col) => col.slug) || []
+
+  // Build relation tree for each collection
+  for (const collectionSlug of collectionSlugs) {
+    result.collections[collectionSlug] = buildRelationTreeForCollection(
+      collectionSlug,
+      config,
+      maxDepth,
+      new Set(),
+      0,
+    )
+  }
+
+  // Get all global slugs from the config
+  const globalSlugs = config.globals?.map((global) => global.slug) || []
+
+  // Build relation tree for each global
+  for (const globalSlug of globalSlugs) {
+    result.globals[globalSlug] = buildRelationTreeForGlobal(
+      globalSlug,
+      config,
+      maxDepth,
+      new Set(),
+      0,
+    )
+  }
+
+  return result
+}
+
+/**
+ * Helper function to build relation tree for a specific global.
+ * Similar to buildRelationTreeForCollection but for globals.
+ *
+ * @param globalSlug - The slug of the global to process
+ * @param config - The full Payload configuration
+ * @param maxDepth - Maximum depth to traverse
+ * @param visitedCollections - Set of already visited collections to prevent circular references
+ * @param currentDepth - Current depth level
+ * @returns Array of all relation paths including nested ones for this global
+ */
+const buildRelationTreeForGlobal = (
+  globalSlug: string,
+  config: SanitizedConfig,
+  maxDepth: number,
+  visitedCollections: Set<string>,
+  currentDepth: number,
+): RelationPath[] => {
+  const allRelationPaths: RelationPath[] = []
+
+  // Find the global configuration
+  const globalConfig = config.globals?.find((global) => global.slug === globalSlug)
+  if (!globalConfig) {
+    throw new Error(`Global ${globalSlug} not found in config`)
+  }
+
+  // Prevent infinite recursion and respect max depth
+  if (visitedCollections.has(globalSlug) || (maxDepth > 0 && currentDepth >= maxDepth)) {
+    return allRelationPaths
+  }
+
+  // Mark this global as visited
+  visitedCollections.add(globalSlug)
+
+  // Extract relation paths from current global with global slug as prefix
+  const currentRelationPaths = extractRelationFieldPaths(
+    globalConfig.fields,
+    '',
+    currentDepth,
+    globalSlug,
+  )
+  allRelationPaths.push(...currentRelationPaths)
+
+  // For each relationship field, recursively collect paths from related collections
+  for (const relationPath of currentRelationPaths) {
+    for (const relatedCollectionSlug of relationPath.relationTo) {
+      // Create a new visited set for this branch to allow different paths to the same collection
+      const branchVisitedCollections = new Set(visitedCollections)
+      branchVisitedCollections.delete(globalSlug) // Allow revisiting the current global from different paths
+
+      const nestedRelationPaths = buildRelationTreeForCollection(
+        relatedCollectionSlug,
+        config,
+        maxDepth,
+        branchVisitedCollections,
+        currentDepth + 1,
+      )
+
+      // Update the paths to include the current relationship path as prefix
+      // Note: relationPath.path already includes the global slug prefix
+      const prefixedNestedPaths = nestedRelationPaths.map((nestedPath) => ({
+        ...nestedPath,
+        depth: nestedPath.depth,
+        path: `${relationPath.path}.${nestedPath.path}`,
+      }))
+
+      allRelationPaths.push(...prefixedNestedPaths)
+    }
+  }
+
+  return allRelationPaths
+}
+
+/**
+ * Helper function to build relation tree for a specific collection.
+ * This is the original logic extracted into a separate function.
  *
  * @param collectionSlug - The slug of the collection to process
  * @param config - The full Payload configuration
- * @param maxDepth - Maximum depth to traverse (default: 3, set to 0 for unlimited)
+ * @param maxDepth - Maximum depth to traverse
  * @param visitedCollections - Set of already visited collections to prevent circular references
  * @param currentDepth - Current depth level
- * @returns Array of all relation paths including nested ones
+ * @returns Array of all relation paths including nested ones for this collection
  */
-export const buildRelationTree = (
+const buildRelationTreeForCollection = (
   collectionSlug: string,
   config: SanitizedConfig,
-  maxDepth: number = 3,
-  visitedCollections: Set<string> = new Set(),
-  currentDepth: number = 0,
+  maxDepth: number,
+  visitedCollections: Set<string>,
+  currentDepth: number,
 ): RelationPath[] => {
   const allRelationPaths: RelationPath[] = []
 
@@ -158,7 +293,7 @@ export const buildRelationTree = (
   // Mark this collection as visited
   visitedCollections.add(collectionSlug)
 
-  // Extract relation paths from current collection
+  // Extract relation paths from current collection with collection slug as prefix
   const currentRelationPaths = extractRelationFieldPaths(
     collectionConfig.fields,
     '',
@@ -174,7 +309,7 @@ export const buildRelationTree = (
       const branchVisitedCollections = new Set(visitedCollections)
       branchVisitedCollections.delete(collectionSlug) // Allow revisiting the current collection from different paths
 
-      const nestedRelationPaths = buildRelationTree(
+      const nestedRelationPaths = buildRelationTreeForCollection(
         relatedCollectionSlug,
         config,
         maxDepth,
@@ -183,6 +318,7 @@ export const buildRelationTree = (
       )
 
       // Update the paths to include the current relationship path as prefix
+      // Note: relationPath.path already includes the collection slug prefix
       const prefixedNestedPaths = nestedRelationPaths.map((nestedPath) => ({
         ...nestedPath,
         depth: nestedPath.depth,
@@ -203,20 +339,39 @@ export const buildRelationTree = (
  * import { buildRelationTree } from './config-parser'
  *
  * // Assuming you have your Payload config
- * const relationTree = buildRelationTree(
- *   'categories',
+ * const relationTrees = buildRelationTree(
  *   config,
  *   3 // max depth
  * )
  *
- * // This will return paths like:
- * [
- *   { collectionSlug: "categories", depth: 0, path: "featuredPost", relationTo: ["posts"] },
- *   { collectionSlug: "categories", depth: 0, path: "posts", relationTo: ["posts"] },
- *   { collectionSlug: "posts", depth: 1, path: "featuredPost.author", relationTo: ["authors"] },
- *   { collectionSlug: "posts", depth: 1, path: "featuredPost.image", relationTo: ["media"] },
- *   { collectionSlug: "posts", depth: 1, path: "posts.author", relationTo: ["authors"] },
- *   { collectionSlug: "posts", depth: 1, path: "posts.image", relationTo: ["media"] },
- * ]
+ * // This will return an object like:
+ * {
+ *   collections: {
+ *     "categories": [
+ *       { collectionSlug: "categories", depth: 0, path: "featuredPost", relationTo: ["posts"] },
+ *       { collectionSlug: "categories", depth: 0, path: "posts", relationTo: ["posts"] },
+ *       { collectionSlug: "posts", depth: 1, path: "featuredPost.author", relationTo: ["authors"] },
+ *       { collectionSlug: "posts", depth: 1, path: "featuredPost.image", relationTo: ["media"] },
+ *       { collectionSlug: "posts", depth: 1, path: "posts.author", relationTo: ["authors"] },
+ *       { collectionSlug: "posts", depth: 1, path: "posts.image", relationTo: ["media"] },
+ *     ],
+ *     "posts": [
+ *       { collectionSlug: "posts", depth: 0, path: "author", relationTo: ["authors"] },
+ *       { collectionSlug: "posts", depth: 0, path: "image", relationTo: ["media"] },
+ *       // ... more relation paths
+ *     ],
+ *     // ... more collections
+ *   },
+ *   globals: {
+ *     "siteSettings": [
+ *       { collectionSlug: "siteSettings", depth: 0, path: "featuredPost", relationTo: ["posts"] },
+ *       { collectionSlug: "posts", depth: 1, path: "featuredPost.author", relationTo: ["authors"] },
+ *       { collectionSlug: "posts", depth: 1, path: "featuredPost.image", relationTo: ["media"] },
+ *     ],
+ *     "mainMenu": [
+ *       // ... relation paths for mainMenu global
+ *     ],
+ *   }
+ * }
  * ```
  */

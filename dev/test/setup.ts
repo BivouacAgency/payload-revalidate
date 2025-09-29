@@ -21,8 +21,22 @@ beforeAll(async () => {
   globalPayload = await getPayload({ config })
 })
 
-// Clear mocks before each test
-beforeEach(() => {
+beforeEach(async () => {
+  // Reinit all globals to avoid issues
+  await globalPayload.updateGlobal({
+    slug: 'mainMenu',
+    data: {
+      menu: [{ label: 'mainMenuName1' }],
+    },
+  })
+  await globalPayload.updateGlobal({
+    slug: 'siteSettings',
+    data: {
+      siteName: 'Test Site',
+    },
+  })
+
+  // Clear mocks before each test
   mockRevalidateTag.mockClear()
 })
 
