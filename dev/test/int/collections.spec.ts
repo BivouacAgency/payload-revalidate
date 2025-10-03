@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 
 // Import global payload and mock utilities
 import { mockRevalidateTag, payload } from '../setup.js'
+import { mockAfter, waitForAfterCalls } from './mocks/after.js'
 
 test('revalidates correctly collections on create', async () => {
   const author = await payload.create({
@@ -10,6 +11,7 @@ test('revalidates correctly collections on create', async () => {
       name: 'authorName',
     },
   })
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
@@ -22,6 +24,7 @@ test('revalidates correctly collections on update', async () => {
       name: 'authorName',
     },
   })
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
   const updatedAuthor = await payload.update({
     id: createdAuthor.id,
@@ -30,6 +33,7 @@ test('revalidates correctly collections on update', async () => {
       name: 'authorName',
     },
   })
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${updatedAuthor.id}`)
@@ -42,11 +46,13 @@ test('revalidates correctly collections on delete', async () => {
       name: 'authorName',
     },
   })
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
   await payload.delete({
     id: createdAuthor.id,
     collection: 'authors',
   })
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${createdAuthor.id}`)

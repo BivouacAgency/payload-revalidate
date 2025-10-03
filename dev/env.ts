@@ -5,6 +5,7 @@ export const env = createEnv({
   server: {
     DATABASE_URI: z.string(),
     PAYLOAD_SECRET: z.string(),
+    PREVIEW_SECRET: z.string().default('preview-secret-123456'),
   },
 
   /**

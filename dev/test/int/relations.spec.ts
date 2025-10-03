@@ -3,6 +3,7 @@ import { beforeAll, expect, test } from 'vitest'
 
 // Import global payload and mock utilities
 import { mockRevalidateTag, payload } from '../setup.js'
+import { waitForAfterCalls } from './mocks/after.js'
 
 let mediaId: number
 
@@ -27,6 +28,8 @@ test('revalidates correctly relations for depth 1', async () => {
     },
   })
 
+  await waitForAfterCalls()
+
   // Verify revalidateTag was called for author creation
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -37,6 +40,7 @@ test('revalidates correctly relations for depth 1', async () => {
   const post = await payload.create({
     collection: 'posts',
     data: {
+      slug: 'post-slug-depth-1',
       author: author.id,
       image: mediaId,
       title: 'added by plugin',
@@ -49,6 +53,8 @@ test('revalidates correctly relations for depth 1', async () => {
   }
 
   expect(post.author?.name).toBe('added by plugin')
+
+  await waitForAfterCalls()
 
   // Verify revalidateTag was called for post creation
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
@@ -65,6 +71,8 @@ test('revalidates correctly relations for depth 1', async () => {
     },
   })
 
+  await waitForAfterCalls()
+
   // Verify that revalidateTag was called for related collections
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -78,6 +86,8 @@ test('revalidates correctly relations for depth 1', async () => {
     collection: 'authors',
     where: { name: { equals: 'updated by plugin' } },
   })
+
+  await waitForAfterCalls()
 
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -107,6 +117,7 @@ test('revalidates correctly relations for depth 2 ', async () => {
   const post = await payload.create({
     collection: 'posts',
     data: {
+      slug: 'post-slug-depth-2',
       author: author.id,
       image: mediaId,
       title: 'postTitle',
@@ -124,6 +135,7 @@ test('revalidates correctly relations for depth 2 ', async () => {
     },
   })
 
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
 
   // Update the author (depth 2) - this should trigger revalidation for:
@@ -138,6 +150,7 @@ test('revalidates correctly relations for depth 2 ', async () => {
     },
   })
 
+  await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections in the chain
   expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -158,6 +171,7 @@ test('revalidates correctly relations for depth 2 ', async () => {
     collection: 'authors',
   })
 
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
@@ -191,6 +205,7 @@ test('revalidates correctly relations for depth 3', async () => {
   const post = await payload.create({
     collection: 'posts',
     data: {
+      slug: 'post-slug-depth-3',
       author: author.id,
       image: mediaId,
       title: 'postTitleDepth3',
@@ -219,6 +234,7 @@ test('revalidates correctly relations for depth 3', async () => {
     },
   })
 
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
 
   // Update the author (depth 3) - this should trigger revalidation for:
@@ -234,6 +250,7 @@ test('revalidates correctly relations for depth 3', async () => {
     },
   })
 
+  await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections in the chain
   expect(mockRevalidateTag).toHaveBeenCalledTimes(8)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -257,6 +274,7 @@ test('revalidates correctly relations for depth 3', async () => {
     collection: 'authors',
   })
 
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(8)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
@@ -353,6 +371,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
   const post = await payload.create({
     collection: 'posts',
     data: {
+      slug: 'post-slug-global-test',
       author: author.id,
       image: mediaId,
       title: 'postForGlobalTest',
@@ -368,6 +387,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
     },
   })
 
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
 
   // Update the author (depth 2) - this should trigger revalidation for:
@@ -383,6 +403,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
     },
   })
 
+  await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections and the global
   expect(mockRevalidateTag).toHaveBeenCalledTimes(5)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
@@ -403,6 +424,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
     collection: 'authors',
   })
 
+  await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(5)
   expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
