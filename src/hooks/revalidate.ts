@@ -37,7 +37,15 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = async (para
   if (process.env.SEED_RUN === 'true') {
     return
   }
-  if (params.req.query.draft) {
+  /**
+   * Do not revalidate draft documents
+   * Fixes the following error when creating a document with autosave activated :
+   * "Error: Route /xxxxxx used "revalidateTag xxxxxxx" during render
+   * which is unsupported. To ensure revalidation is performed
+   * consistently it must always happen outside of renders
+   * and cached functions."
+   */
+  if (params.req.query.draft || params.data._status === 'draft') {
     return
   }
   /**
@@ -62,9 +70,32 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = async (para
  * send `revalidatePath`, `collection`, and `slug` to the frontend to use in its revalidate route
  * frameworks may have different ways of doing this, but the idea is the same
  */
-export const revalidateGlobal: GlobalAfterChangeHook = (params) => {
+export const revalidateGlobal: GlobalAfterChangeHook = async (params) => {
   if (process.env.SEED_RUN === 'true') {
     return
   }
-  void revalidateGlobalItem(params)
+  /**
+   * Do not revalidate draft documents
+   * Fixes the following error when creating a document with autosave activated :
+   * "Error: Route /xxxxxx used "revalidateTag xxxxxxx" during render
+   * which is unsupported. To ensure revalidation is performed
+   * consistently it must always happen outside of renders
+   * and cached functions."
+   */
+  if (params.req.query.draft || params.data._status === 'draft') {
+    return
+  }
+  /**
+   * TOWONDER : await here is needed, in order to ensure data is
+   * correctly invalidaded INSTANTANEOUSLY, and avoid querying
+   * old data if we use a cached query directly after modifying
+   * the data. However, this could reduces performances a LOT with
+   * complex data structures or big data sets.
+   * Also fixes the error :
+   * "Error: Route /xxxxxx used "revalidateTag xxxxxxx" during render
+   * which is unsupported. To ensure revalidation is performed
+   * consistently it must always happen outside of renders
+   * and cached functions."
+   */
+  await revalidateGlobalItem(params)
 }
