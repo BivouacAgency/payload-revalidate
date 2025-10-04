@@ -65,6 +65,7 @@ test('revalidates correctly relations for depth 1', async () => {
   expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
 
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 
   author = await payload.update({
     id: author.id,
@@ -85,6 +86,7 @@ test('revalidates correctly relations for depth 1', async () => {
   expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
 
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 
   await payload.delete({
     collection: 'authors',
@@ -317,6 +319,7 @@ test('revalidates correctly relations of a global -> collection ', async () => {
     collection: 'posts',
     data: {
       slug: 'post-slug-global-test',
+      _status: 'published',
       image: mediaId,
       title: 'postForGlobalTest',
     },
@@ -330,8 +333,9 @@ test('revalidates correctly relations of a global -> collection ', async () => {
       siteName: 'Test Site',
     },
   })
-
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 
   // Update the post (depth 1) - this should trigger revalidation for:
   // - posts collection and specific post (depth 1)
@@ -343,6 +347,7 @@ test('revalidates correctly relations of a global -> collection ', async () => {
       title: 'postForGlobalTestUpdated',
     },
   })
+  await waitForAfterCalls()
 
   // Verify revalidateTag was called for all related collections and the global
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
@@ -352,7 +357,7 @@ test('revalidates correctly relations of a global -> collection ', async () => {
   expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
 
   mockRevalidateTag.mockClear()
-
+  mockAfter.mockClear()
   // Delete the post (depth 1) - this should trigger revalidation for:
   // - posts collection and specific post (depth 1)
   // - siteSettings global (depth 0, but references the post)
@@ -360,14 +365,13 @@ test('revalidates correctly relations of a global -> collection ', async () => {
     id: post.id,
     collection: 'posts',
   })
+  await waitForAfterCalls()
 
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
   expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
   expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
   expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
   expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
-
-  mockRevalidateTag.mockClear()
 })
 
 test('revalidates correctly relations of a global -> collection -> collection', async () => {
@@ -384,6 +388,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
     collection: 'posts',
     data: {
       slug: 'post-slug-global-test',
+      _status: 'published',
       author: author.id,
       image: mediaId,
       title: 'postForGlobalTest',
@@ -401,6 +406,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
 
   await waitForAfterCalls()
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 
   // Update the author (depth 2) - this should trigger revalidation for:
   // - authors collection and specific author (depth 2)
@@ -426,6 +432,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
   expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
 
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 
   // Delete the author (depth 2) - this should trigger revalidation for:
   // - authors collection and specific author (depth 2)
@@ -447,7 +454,7 @@ test('revalidates correctly relations of a global -> collection -> collection', 
   expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
 
   mockRevalidateTag.mockClear()
-
+  mockAfter.mockClear()
   // Clean up remaining entities
   await payload.delete({
     id: post.id,

@@ -4,18 +4,27 @@ import type {
   GlobalAfterChangeHook,
 } from 'payload'
 
+import { revalidateTag } from 'next/cache.js'
 import { after } from 'next/server.js'
 
-import { revalidateCollectionItem, revalidateGlobalItem } from '../lib/revalidation.js'
+import {
+  getRevalidationTagsCollectionItem,
+  getRevalidationTagsGlobalItem,
+} from '../lib/revalidation.js'
 
 /**
  * Revalidate all data related to the deleted document.
- * Notice that the hook itself is not async and we are not awaiting `revalidate`.
  */
-export const revalidateCollectionDelete: CollectionAfterDeleteHook = (params) => {
+export const revalidateCollectionDelete: CollectionAfterDeleteHook = async (params) => {
   if (process.env.SEED_RUN === 'true') {
     return
   }
+  /**
+   * TO WONDER : tags retrieval is awaited, otherwise if the document update/deletion occurs,
+   * all documents with relations to the update/deleted document will "detach" from the doc,
+   * therefore we cannot find them to revalidate them correctly.
+   */
+  const tags = await getRevalidationTagsCollectionItem(params)
   /**
    * "after" is used to ensure the revalidation is performed outside of page renders.
    * Because payload can execute collections/globals update during rendering
@@ -26,21 +35,21 @@ export const revalidateCollectionDelete: CollectionAfterDeleteHook = (params) =>
    * consistently it must always happen outside of renders
    * and cached functions."
    *
-   * TO WONDER : Result is not awaited, so cache invalidation is not immediate.
-   * This can be a problem if we use a cached query directly after modifying
-   * the data.
+   * TO WONDER : this action is not awaited, so cache invalidation is not really immediate.
+   * However, there is no Promises involved, so it probably won't cause race conditions.
    */
-  after(async () => {
-    await revalidateCollectionItem(params)
+  after(() => {
+    for (const tag of tags) {
+      revalidateTag(tag)
+    }
+    params.req.payload.logger.info(`Revalidated tags ${tags.join(', ')}`)
   })
 }
 
 /**
  * Revalidate all data related to the updated document.
- * Notice that the hook itself is not async and we are not awaiting `revalidate`.
- * Only revalidate existing docs that are published (not drafts)
  */
-export const revalidateCollectionChange: CollectionAfterChangeHook = (params) => {
+export const revalidateCollectionChange: CollectionAfterChangeHook = async (params) => {
   if (process.env.SEED_RUN === 'true') {
     return
   }
@@ -54,6 +63,8 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = (params) =>
   ) {
     return
   }
+
+  const tags = await getRevalidationTagsCollectionItem(params)
   /**
    * "after" is used to ensure the revalidation is performed outside of page renders.
    * Because payload can execute collections/globals update during rendering
@@ -64,12 +75,14 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = (params) =>
    * consistently it must always happen outside of renders
    * and cached functions."
    *
-   * TO WONDER : Result is not awaited, so cache invalidation is not immediate.
-   * This can be a problem if we use a cached query directly after modifying
-   * the data.
+   * TO WONDER : this action is not awaited, so cache invalidation is not really immediate.
+   * However, there is no Promises involved, so it probably won't cause race conditions.
    */
-  after(async () => {
-    await revalidateCollectionItem(params)
+  after(() => {
+    for (const tag of tags) {
+      revalidateTag(tag)
+    }
+    params.req.payload.logger.info(`Revalidated tags ${tags.join(', ')}`)
   })
 }
 
@@ -77,7 +90,7 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = (params) =>
  * Revalidate all data related to the updated document.
  * Notice that the hook itself is not async and we are not awaiting `revalidate`.
  */
-export const revalidateGlobal: GlobalAfterChangeHook = (params) => {
+export const revalidateGlobal: GlobalAfterChangeHook = async (params) => {
   if (process.env.SEED_RUN === 'true') {
     return
   }
@@ -88,6 +101,11 @@ export const revalidateGlobal: GlobalAfterChangeHook = (params) => {
     return
   }
   /**
+   * TODO : globals shouldn't need to await tags retrieval,
+   * because globals cannot be set in a relation field
+   */
+  const tags = await getRevalidationTagsGlobalItem(params)
+  /**
    * "after" is used to ensure the revalidation is performed outside of page renders.
    * Because payload can execute collections/globals update during rendering
    * (for example when creating a new document where autosave is activated)
@@ -97,11 +115,13 @@ export const revalidateGlobal: GlobalAfterChangeHook = (params) => {
    * consistently it must always happen outside of renders
    * and cached functions."
    *
-   * TO WONDER : Result is not awaited, so cache invalidation is not immediate.
-   * This can be a problem if we use a cached query directly after modifying
-   * the data.
+   * TO WONDER : this action is not awaited, so cache invalidation is not really immediate.
+   * However, there is no Promises involved, so it probably won't cause race conditions.
    */
-  after(async () => {
-    await revalidateGlobalItem(params)
+  after(() => {
+    for (const tag of tags) {
+      revalidateTag(tag)
+    }
+    params.req.payload.logger.info(`Revalidated tags ${tags.join(', ')}`)
   })
 }
