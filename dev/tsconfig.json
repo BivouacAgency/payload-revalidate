@@ -16,20 +16,12 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@payload-config": [
-        "./payload.config.ts"
-      ],
-      "payload-revalidate": [
-        "../src/index.ts"
-      ],
-      "payload-revalidate/client": [
-        "../src/exports/client.ts"
-      ],
-      "payload-revalidate/rsc": [
-        "../src/exports/rsc.ts"
-      ]
+      "@payload-config": ["./payload.config.ts"],
+      "payload-revalidate": ["../src/index.ts"],
+      "payload-revalidate/client": ["../src/exports/client.ts"],
+      "payload-revalidate/rsc": ["../src/exports/rsc.ts"]
     },
     "noEmit": true,
-    "emitDeclarationOnly": false,
+    "emitDeclarationOnly": false
   }
 }

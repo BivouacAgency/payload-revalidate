@@ -156,6 +156,7 @@ export interface Category {
  */
 export interface Post {
   id: number;
+  slug: string;
   title?: string | null;
   content?: {
     root: {
@@ -176,6 +177,7 @@ export interface Post {
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -355,12 +357,14 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
+  slug?: T;
   title?: T;
   content?: T;
   author?: T;
   image?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

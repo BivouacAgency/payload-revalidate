@@ -1,0 +1,153 @@
+.post-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+.post-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.post-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.post-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111;
+  line-height: 1.2;
+  flex: 1;
+}
+
+.edit-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: #000000;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  height: fit-content;
+  border: 2px solid #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &:hover {
+    background-color: #333333;
+    border-color: #333333;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  &:focus {
+    outline: 2px solid #000000;
+    outline-offset: 2px;
+  }
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.post-author {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.post-date {
+  color: #6b7280;
+}
+
+.post-image {
+  margin: 2rem 0;
+
+  img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .image-caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-style: italic;
+    text-align: center;
+  }
+}
+
+.post-content {
+  margin: 2rem 0;
+  font-size: 1.1rem;
+
+  pre {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+}
+
+.post-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.post-updated {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .post-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .post-title-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .post-title {
+    font-size: 2rem;
+  }
+
+  .edit-button {
+    align-self: flex-start;
+  }
+
+  .post-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

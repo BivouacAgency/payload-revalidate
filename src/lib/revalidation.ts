@@ -1,4 +1,3 @@
-import { revalidateTag } from 'next/cache.js'
 import {
   type PayloadRequest,
   type RequestContext,
@@ -22,9 +21,9 @@ export interface RevalidateCollectionParams<T extends TypeWithID = TypeWithID> {
 /**
  * TODO : this is a new version, which seem to handle relations AND blocks, but not heavily tested
  */
-export const revalidateCollectionItem = async (
+export const getRevalidationTagsCollectionItem = async (
   params: RevalidateCollectionParams,
-): Promise<void> => {
+): Promise<string[]> => {
   const payload = params.req.payload
 
   // Use a set to avoid duplicate tags and improve readability
@@ -62,11 +61,7 @@ export const revalidateCollectionItem = async (
     tagsToRevalidate.add(tag)
   }
 
-  for (const tag of Array.from(tagsToRevalidate)) {
-    revalidateTag(tag)
-  }
-
-  payload.logger.info(`Revalidated tags ${Array.from(tagsToRevalidate).join(', ')}`)
+  return Array.from(tagsToRevalidate)
 }
 
 export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
@@ -76,7 +71,9 @@ export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
   req: PayloadRequest
 }
 
-export const revalidateGlobalItem = async (params: RevalidateGlobalParams): Promise<void> => {
+export const getRevalidationTagsGlobalItem = async (
+  params: RevalidateGlobalParams,
+): Promise<string[]> => {
   const payload = params.req.payload
 
   // Use a set to avoid duplicate tags and improve readability
@@ -101,11 +98,7 @@ export const revalidateGlobalItem = async (params: RevalidateGlobalParams): Prom
     tagsToRevalidate.add(tag)
   }
 
-  for (const tag of Array.from(tagsToRevalidate)) {
-    revalidateTag(tag)
-  }
-
-  payload.logger.info(`Revalidated tags ${Array.from(tagsToRevalidate).join(', ')}`)
+  return Array.from(tagsToRevalidate)
 }
 
 /**
@@ -148,6 +141,9 @@ const getTagsFromRelations = async (params: {
         for (const relatedDocument of relatedDocuments.docs) {
           const id = relatedDocument?.id
           tagsToRevalidate.add(`${configCollection.slug}.${id}`)
+          if (relatedDocument?.slug) {
+            tagsToRevalidate.add(`${configCollection.slug}.${relatedDocument.slug}`)
+          }
         }
       } catch (e) {
         payload.logger.error(

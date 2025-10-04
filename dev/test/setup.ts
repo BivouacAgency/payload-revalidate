@@ -2,7 +2,9 @@ import type { Payload } from 'payload'
 
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { beforeAll, beforeEach, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
+
+import { mockAfter, waitForAfterCalls } from './int/mocks/after.js'
 
 // Global payload instance for all tests
 let globalPayload: Payload
@@ -10,6 +12,12 @@ let globalPayload: Payload
 // Mock Next.js revalidateTag function globally
 vi.mock('next/cache.js', () => ({
   revalidateTag: vi.fn(),
+}))
+
+// Mock Next.js after function globally
+// export const mockAfter = vi.fn((task: Promise<unknown>) => task)
+vi.mock('next/server.js', () => ({
+  after: vi.fn(),
 }))
 
 // Import the mocked function for global access
@@ -37,7 +45,15 @@ beforeEach(async () => {
   })
 
   // Clear mocks before each test
+  await waitForAfterCalls()
   mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
+})
+
+afterEach(async () => {
+  await waitForAfterCalls()
+  mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
 })
 
 // Export a getter function to access the global payload
