@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 
 // Import global payload and mock utilities
 import { mockRevalidateTag, payload } from '../setup.js'
-import { mockAfter, waitForAfterCalls } from './mocks/after.js'
+import { waitForAfterCalls } from './mocks/after.js'
 
 test('revalidates correctly collections on create', async () => {
   const author = await payload.create({

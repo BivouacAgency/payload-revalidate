@@ -1,9 +1,10 @@
 import type { CollectionSlug, PayloadRequest } from 'payload'
 
 import configPromise from '@payload-config'
-import { env } from 'env'
 import { draftMode } from 'next/headers.js'
 import { getPayload } from 'payload'
+
+import { env } from '../../../env.js'
 
 export async function GET(
   req: {

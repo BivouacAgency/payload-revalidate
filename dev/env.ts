@@ -15,6 +15,7 @@ export const env = createEnv({
   clientPrefix: 'NEXT_PUBLIC_',
 
   client: {
+    NEXT_PUBLIC_WEBSITE_URL: z.string().default('http://localhost:3000'),
     // NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   },
 

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { env } from 'env'
+import { env } from '../env.js'
 
 const Posts: CollectionConfig = {
   slug: 'posts',
