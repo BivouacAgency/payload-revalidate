@@ -1,6 +1,6 @@
 {
   "name": "payload-revalidate",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "A plugin to use PayloadCMS with next/cache architecture, revalidating payload data.",
   "license": "MIT",
   "type": "module",
@@ -40,7 +40,8 @@
     "generate:types": "pnpm dev:generate-types",
     "lint": "eslint",
     "lint:fix": "eslint ./src --fix",
-    "prepublishOnly": "pnpm clean && pnpm build",
+    "lint:publint": "publint",
+    "prepublishOnly": "only-allow pnpm && pnpm clean && pnpm build && publint --pack pnpm",
     "test": "pnpm test:int && pnpm test:e2e",
     "test:e2e": "playwright test",
     "test:int": "vitest"
@@ -52,8 +53,8 @@
     "@eslint/eslintrc": "^3.2.0",
     "@payloadcms/db-postgres": "^3.57.0",
     "@payloadcms/eslint-config": "^3.28.0",
-    "@payloadcms/next": "^3.57.0",
     "@payloadcms/live-preview-react": "^3.57.0",
+    "@payloadcms/next": "^3.57.0",
     "@payloadcms/richtext-lexical": "^3.57.0",
     "@payloadcms/ui": "^3.57.0",
     "@playwright/test": "^1.52.0",
@@ -68,9 +69,11 @@
     "eslint": "^9.23.0",
     "eslint-config-next": "15.4.4",
     "graphql": "^16.8.1",
+    "only-allow": "^1.2.2",
     "open": "^10.1.0",
     "payload": "^3.57.0",
     "prettier": "^3.4.2",
+    "publint": "^0.3.18",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "rimraf": "6.0.1",
@@ -91,18 +94,18 @@
   "publishConfig": {
     "exports": {
       ".": {
-        "import": "./dist/index.js",
         "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
         "default": "./dist/index.js"
       },
       "./client": {
-        "import": "./dist/exports/client.js",
         "types": "./dist/exports/client.d.ts",
+        "import": "./dist/exports/client.js",
         "default": "./dist/exports/client.js"
       },
       "./rsc": {
-        "import": "./dist/exports/rsc.js",
         "types": "./dist/exports/rsc.d.ts",
+        "import": "./dist/exports/rsc.js",
         "default": "./dist/exports/rsc.js"
       }
     },
