@@ -59,7 +59,7 @@ export const revalidateCollectionChange: CollectionAfterChangeHook = async (para
   if (
     params.req.query.draft ||
     // When creating a new document with autosave activated, the req.query.draf is undefined
-    params.data._status === 'draft'
+    params.data?._status === 'draft'
   ) {
     return
   }
@@ -97,7 +97,7 @@ export const revalidateGlobal: GlobalAfterChangeHook = async (params) => {
   /**
    * Do not revalidate draft documents
    */
-  if (params.req.query.draft || params.data._status === 'draft') {
+  if (params.req.query.draft || params.data?._status === 'draft') {
     return
   }
   /**
