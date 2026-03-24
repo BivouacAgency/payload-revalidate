@@ -232,9 +232,10 @@ const buildRelationTreeForGlobal = (
   // For each relationship field, recursively collect paths from related collections
   for (const relationPath of currentRelationPaths) {
     for (const relatedCollectionSlug of relationPath.relationTo) {
-      // Create a new visited set for this branch to allow different paths to the same collection
+      // Snapshot visited state per branch so sibling relations to the same collection
+      // don't block each other. The current global/collection slug stays in the snapshot
+      // to prevent self-reference cycles.
       const branchVisitedCollections = new Set(visitedCollections)
-      branchVisitedCollections.delete(globalSlug) // Allow revisiting the current global from different paths
 
       const nestedRelationPaths = buildRelationTreeForCollection(
         relatedCollectionSlug,
@@ -305,9 +306,10 @@ const buildRelationTreeForCollection = (
   // For each relationship field, recursively collect paths from related collections
   for (const relationPath of currentRelationPaths) {
     for (const relatedCollectionSlug of relationPath.relationTo) {
-      // Create a new visited set for this branch to allow different paths to the same collection
+      // Snapshot visited state per branch so sibling relations to the same collection
+      // don't block each other. The current collection slug stays in the snapshot
+      // to prevent self-reference cycles.
       const branchVisitedCollections = new Set(visitedCollections)
-      branchVisitedCollections.delete(collectionSlug) // Allow revisiting the current collection from different paths
 
       const nestedRelationPaths = buildRelationTreeForCollection(
         relatedCollectionSlug,
