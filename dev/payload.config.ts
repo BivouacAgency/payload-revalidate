@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url'
 import Authors from './collections/Authors.js'
 import Categories from './collections/Categories.js'
 import Media from './collections/Media.js'
+import Pages from './collections/Pages.js'
 import Posts from './collections/Posts.js'
 import Series from './collections/Series.js'
 import Users from './collections/Users.js'
@@ -31,7 +32,7 @@ const config = buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Authors, Categories, Media, Posts, Series, Users],
+  collections: [Authors, Categories, Media, Pages, Posts, Series, Users],
   db: postgresAdapter({
     pool: {
       connectionString: env.DATABASE_URI,

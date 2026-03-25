@@ -1,5 +1,5 @@
 import { getAssetsPath } from 'helpers/file.js'
-import { beforeAll, expect, test } from 'vitest'
+import { beforeAll, expect, test, vi } from 'vitest'
 
 // Import global payload and mock utilities
 import { mockRevalidateTag, payload } from '../setup.js'
@@ -460,4 +460,144 @@ test('revalidates correctly relations of a global -> collection -> collection', 
     id: post.id,
     collection: 'posts',
   })
+})
+
+// ─── Self-referencing collection tests ───────────────────────────────────────
+// These tests guard against the cycle-detection bug where a collection that
+// references itself (pages → pages) caused infinite relation-path generation
+// and invalid Payload queries, producing "Error during deep revalidation" logs.
+
+test('self-referencing collection: updating a referenced page revalidates the referencing page', async () => {
+  const loggerErrorSpy = vi.spyOn(payload.logger, 'error')
+
+  const pageA = await payload.create({
+    collection: 'pages',
+    data: { slug: 'page-a-self-ref' },
+  })
+
+  const pageB = await payload.create({
+    collection: 'pages',
+    data: { slug: 'page-b-self-ref', relatedPage: pageA.id },
+  })
+
+  await waitForAfterCalls()
+  mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
+
+  // Update Page A — Page B references it, so both should be revalidated
+  await payload.update({
+    id: pageA.id,
+    collection: 'pages',
+    data: { slug: 'page-a-self-ref-updated' },
+  })
+
+  await waitForAfterCalls()
+
+  expect(mockRevalidateTag).toHaveBeenCalledWith('pages')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`pages.${pageA.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`pages.${pageA.slug}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`pages.${pageB.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`pages.${pageB.slug}`)
+
+  // No "Error during deep revalidation" should have been logged
+  expect(loggerErrorSpy).not.toHaveBeenCalledWith(
+    expect.objectContaining({ error: expect.anything() }),
+    expect.stringContaining('deep revalidation'),
+  )
+
+  loggerErrorSpy.mockRestore()
+
+  await payload.delete({ id: pageA.id, collection: 'pages' })
+  await payload.delete({ id: pageB.id, collection: 'pages' })
+})
+
+test('self-referencing collection: updating a page with no referencing docs revalidates only itself', async () => {
+  const loggerErrorSpy = vi.spyOn(payload.logger, 'error')
+
+  const pageA = await payload.create({
+    collection: 'pages',
+    data: { slug: 'page-a-isolated' },
+  })
+
+  await waitForAfterCalls()
+  mockRevalidateTag.mockClear()
+  mockAfter.mockClear()
+
+  // No other page references pageA — only its own tags should be revalidated
+  await payload.update({
+    id: pageA.id,
+    collection: 'pages',
+    data: { slug: 'page-a-isolated-updated' },
+  })
+
+  await waitForAfterCalls()
+
+  expect(mockRevalidateTag).toHaveBeenCalledWith('pages')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`pages.${pageA.id}`)
+  // No extra unexpected tags
+  expect(mockRevalidateTag).toHaveBeenCalledTimes(3) // pages, pages.id, pages.slug
+
+  expect(loggerErrorSpy).not.toHaveBeenCalledWith(
+    expect.objectContaining({ error: expect.anything() }),
+    expect.stringContaining('deep revalidation'),
+  )
+
+  loggerErrorSpy.mockRestore()
+
+  await payload.delete({ id: pageA.id, collection: 'pages' })
+})
+
+test('sibling relations regression: two fields pointing to same collection with different docs both trigger revalidation', async () => {
+  // Categories has both `featuredPost` (single) and `posts` (many) pointing to `posts`.
+  // This test uses *different* posts for each field to verify that processing branch 1
+  // (featuredPost → postA) does not poison the visited-set of branch 2 (posts → postB).
+  const postA = await payload.create({
+    collection: 'posts',
+    data: { slug: 'sibling-post-a', title: 'Sibling Post A', image: mediaId },
+  })
+
+  const postB = await payload.create({
+    collection: 'posts',
+    data: { slug: 'sibling-post-b', title: 'Sibling Post B', image: mediaId },
+  })
+
+  const category = await payload.create({
+    collection: 'categories',
+    data: {
+      name: 'Sibling Regression Category',
+      featuredPost: postA.id, // branch 1
+      posts: [postB.id], // branch 2 — different post
+    },
+  })
+
+  await waitForAfterCalls()
+  mockRevalidateTag.mockClear()
+
+  // Updating postA should revalidate category via `featuredPost`
+  await payload.update({
+    id: postA.id,
+    collection: 'posts',
+    data: { title: 'Sibling Post A Updated' },
+  })
+
+  await waitForAfterCalls()
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
+
+  mockRevalidateTag.mockClear()
+
+  // Updating postB should revalidate category via `posts`
+  await payload.update({
+    id: postB.id,
+    collection: 'posts',
+    data: { title: 'Sibling Post B Updated' },
+  })
+
+  await waitForAfterCalls()
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
+
+  await payload.delete({ id: postA.id, collection: 'posts' })
+  await payload.delete({ id: postB.id, collection: 'posts' })
+  await payload.delete({ id: category.id, collection: 'categories' })
 })
